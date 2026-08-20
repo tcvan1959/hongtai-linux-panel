@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hongtai Panel Studio</title>
+  <link rel="stylesheet" href="/editor.css">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">HONGTAI LINUX PANEL</p>
+      <h1>Panel Studio</h1>
+    </div>
+    <div class="top-actions">
+      <span id="status" class="status">Loading layout…</span>
+      <button id="save" class="primary" disabled>Save layout</button>
+    </div>
+  </header>
+
+  <main class="workspace">
+    <aside class="toolbox card">
+      <h2>Add a widget</h2>
+      <p class="hint">Choose an item, then position it on the display.</p>
+      <div id="palette" class="palette">
+        <button data-kind="panel"><span>▰</span> Panel</button>
+        <button data-kind="label"><span>T</span> Text</button>
+        <button data-kind="clock"><span>◷</span> Clock</button>
+        <button data-kind="value"><span>#</span> Sensor value</button>
+        <button data-kind="progress"><span>▰</span> Progress bar</button>
+        <button data-kind="image"><span>▧</span> Image</button>
+      </div>
+      <hr>
+      <h2>Display</h2>
+      <label>Name <input id="layout-name" type="text"></label>
+      <label>Background <input id="layout-background" type="color"></label>
+      <div class="dimensions"><span id="dimensions">480 × 320</span><small>native pixels</small></div>
+      <hr>
+      <div class="shortcuts">
+        <strong>Tips</strong>
+        <span>Drag to move</span>
+        <span>Use the corner to resize</span>
+        <span>Arrow keys move 1 pixel</span>
+      </div>
+    </aside>
+
+    <section class="stage-wrap">
+      <div class="stage-heading">
+        <div><strong>Live preview</strong><span>Exact 3:2 panel canvas</span></div>
+        <button id="duplicate" class="quiet" disabled>Duplicate</button>
+      </div>
+      <div class="stage-shell">
+        <div id="canvas" class="canvas" aria-label="Panel preview"></div>
+      </div>
+      <div class="stage-footer"><span id="widget-count">0 widgets</span><span>Changes appear on the panel only after Save</span></div>
+    </section>
+
+    <aside class="inspector card">
+      <div class="inspector-heading">
+        <div><p class="eyebrow">SELECTED WIDGET</p><h2 id="selection-title">Nothing selected</h2></div>
+        <button id="delete" class="danger" disabled aria-label="Delete selected widget">Delete</button>
+      </div>
+      <div id="empty-inspector" class="empty-inspector">
+        <div class="selection-icon">↖</div>
+        <p>Select a widget on the display to edit its appearance and content.</p>
+      </div>
+      <form id="properties" class="properties" hidden></form>
+    </aside>
+  </main>
+
+  <div id="toast" class="toast" role="status"></div>
+  <script src="/editor.js"></script>
+</body>
+</html>

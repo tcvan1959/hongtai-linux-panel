@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hongtai Panel Control</title>
+  <link rel="stylesheet" href="/editor.css">
+</head>
+<body class="control-body">
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">HONGTAI LINUX PANEL</p>
+      <h1>Panel Control</h1>
+    </div>
+    <div class="top-actions">
+      <span id="connection-pill" class="connection-pill disconnected">Disconnected</span>
+      <button id="exit-app" class="danger">Exit app</button>
+    </div>
+  </header>
+
+  <main class="control-workspace">
+    <section class="control-card identity-card">
+      <div class="control-heading">
+        <div><p class="eyebrow">DEVICE</p><h2>Verified panel</h2></div>
+        <button id="detect-panel">Detect panel</button>
+      </div>
+      <dl class="identity-grid">
+        <div><dt>Device path</dt><dd id="device-path">Not detected</dd></div>
+        <div><dt>Model</dt><dd id="device-model">—</dd></div>
+        <div><dt>Firmware</dt><dd id="device-firmware">—</dd></div>
+        <div><dt>Resolution</dt><dd id="device-resolution">—</dd></div>
+      </dl>
+    </section>
+
+    <section class="control-card preview-card">
+      <div class="control-heading">
+        <div><p class="eyebrow">DISPLAY</p><h2>Built-in layout</h2></div>
+        <label class="layout-select">Layout
+          <select id="layout-choice">
+            <option value="orientation">Orientation test</option>
+            <option value="dashboard">Starter dashboard</option>
+          </select>
+        </label>
+      </div>
+      <div class="panel-preview-shell">
+        <img id="panel-preview" alt="Preview of the selected panel layout">
+      </div>
+      <div class="display-actions">
+        <button id="start-display" class="primary" disabled>Start display</button>
+        <button id="stop-display" disabled>Stop display</button>
+      </div>
+    </section>
+
+    <section class="control-card settings-card">
+      <div class="control-heading">
+        <div><p class="eyebrow">BACKLIGHT</p><h2>Brightness</h2></div>
+        <output id="brightness-value" for="brightness">80%</output>
+      </div>
+      <input id="brightness" class="brightness-slider" type="range" min="0" max="100" value="80">
+      <button id="apply-brightness" disabled>Apply brightness</button>
+      <p class="hint">Brightness changes are sent only when you press Apply.</p>
+    </section>
+
+    <section class="control-card restore-card">
+      <p class="eyebrow">HARDWARE PANEL</p>
+      <h2>Factory display</h2>
+      <p class="action-detail">Restarts the panel and temporarily disconnects USB. Available only after the live display is stopped.</p>
+      <button id="restore-default" class="restart" disabled>Restore default display (restarts panel)</button>
+    </section>
+
+    <section class="control-card status-card">
+      <p class="eyebrow">CURRENT ACTION</p>
+      <h2 id="action-title">Waiting for panel detection</h2>
+      <p id="action-detail" class="action-detail">Choose Detect panel to begin.</p>
+      <div id="error-box" class="error-box" hidden></div>
+      <p class="persistence-note">This app runs in the foreground only. Stopping or exiting closes the serial connection; the verified panel blanks after streaming stops.</p>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status"></div>
+  <script src="/control.js"></script>
+</body>
+</html>

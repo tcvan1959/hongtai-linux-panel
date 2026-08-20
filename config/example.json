@@ -1,0 +1,13 @@
+{
+  "device_path": null,
+  "height": 320,
+  "image_path": null,
+  "jpeg_quality": 55,
+  "layout_path": null,
+  "mode": "dashboard",
+  "reconnect_delay": 2.0,
+  "reconnect_enabled": false,
+  "update_interval": 30.0,
+  "version": 1,
+  "width": 480
+}

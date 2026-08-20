@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "name": "System monitor starter dashboard",
+  "width": 480,
+  "height": 320,
+  "background": "#080d18",
+  "widgets": [
+    {"kind": "label", "x": 16, "y": 5, "width": 230, "height": 34, "text": "SYSTEM MONITOR", "font_size": 20, "bold": true, "color": "#dbeafe"},
+    {"kind": "clock", "x": 280, "y": 3, "width": 184, "height": 38, "format": "%H:%M:%S", "font_size": 24, "bold": true, "color": "#67e8f9", "align": "right"},
+    {"kind": "panel", "x": 16, "y": 42, "width": 448, "height": 2, "fill": "#1e3a5f"},
+
+    {"kind": "panel", "x": 16, "y": 55, "width": 219, "height": 150, "fill": "#111827", "outline": "#263449", "radius": 12, "stroke_width": 2},
+    {"kind": "label", "x": 30, "y": 65, "width": 90, "height": 25, "text": "CPU", "font_size": 15, "bold": true, "color": "#22d3ee"},
+    {"kind": "value", "x": 135, "y": 65, "width": 86, "height": 25, "source": "cpu_temp_c", "format": "{value:.0f}°C", "font_size": 15, "bold": true, "align": "right"},
+    {"kind": "value", "x": 30, "y": 95, "width": 150, "height": 44, "source": "cpu_percent", "format": "{value:.0f}%", "font_size": 31, "bold": true},
+    {"kind": "label", "x": 31, "y": 135, "width": 140, "height": 20, "text": "UTILIZATION", "font_size": 13, "color": "#64748b"},
+    {"kind": "progress", "x": 30, "y": 171, "width": 191, "height": 18, "source": "cpu_percent", "fill": "#263449", "color": "#22d3ee", "radius": 7},
+
+    {"kind": "panel", "x": 247, "y": 55, "width": 217, "height": 150, "fill": "#111827", "outline": "#263449", "radius": 12, "stroke_width": 2},
+    {"kind": "label", "x": 261, "y": 65, "width": 90, "height": 25, "text": "GPU", "font_size": 15, "bold": true, "color": "#a78bfa"},
+    {"kind": "value", "x": 360, "y": 65, "width": 90, "height": 25, "source": "gpu_temp_c", "format": "{value:.0f}°C", "font_size": 15, "bold": true, "align": "right"},
+    {"kind": "value", "x": 261, "y": 95, "width": 150, "height": 44, "source": "gpu_percent", "format": "{value:.0f}%", "font_size": 31, "bold": true},
+    {"kind": "label", "x": 262, "y": 135, "width": 140, "height": 20, "text": "UTILIZATION", "font_size": 13, "color": "#64748b"},
+    {"kind": "progress", "x": 261, "y": 171, "width": 189, "height": 18, "source": "gpu_percent", "fill": "#263449", "color": "#a78bfa", "radius": 7},
+
+    {"kind": "panel", "x": 16, "y": 220, "width": 448, "height": 85, "fill": "#111827", "outline": "#263449", "radius": 12, "stroke_width": 2},
+    {"kind": "label", "x": 30, "y": 230, "width": 110, "height": 25, "text": "MEMORY", "font_size": 15, "bold": true, "color": "#94a3b8"},
+    {"kind": "value", "x": 245, "y": 230, "width": 74, "height": 25, "source": "memory_used_gib", "format": "{value:.1f} GiB", "font_size": 15, "bold": true, "align": "right"},
+    {"kind": "label", "x": 323, "y": 230, "width": 12, "height": 25, "text": "/", "font_size": 15, "bold": true, "align": "center"},
+    {"kind": "value", "x": 337, "y": 230, "width": 113, "height": 25, "source": "memory_total_gib", "format": "{value:.1f} GiB", "font_size": 15, "bold": true, "align": "right"},
+    {"kind": "progress", "x": 30, "y": 268, "width": 420, "height": 19, "source": "memory_percent", "fill": "#263449", "color": "#34d399", "radius": 7},
+    {"kind": "value", "x": 30, "y": 289, "width": 60, "height": 16, "source": "memory_percent", "format": "{value:.0f}%", "font_size": 13, "color": "#a7f3d0"},
+    {"kind": "value", "x": 300, "y": 289, "width": 150, "height": 16, "source": "gpu_name", "font_size": 13, "color": "#94a3b8", "align": "right"}
+  ]
+}

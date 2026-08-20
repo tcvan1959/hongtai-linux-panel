@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hongtai-linux-panel"
+version = "0.1.0"
+description = "Linux tools and libraries for Hongtai USB display panels"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [{ name = "Hongtai Linux Panel contributors" }]
+classifiers = [
+  "Development Status :: 2 - Pre-Alpha",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3",
+]
+dependencies = []
+
+[project.optional-dependencies]
+images = ["Pillow>=10"]
+dev = ["Pillow>=10"]
+
+[project.scripts]
+hongtai-query = "hongtai_panel.cli_query:main"
+hongtai-image = "hongtai_panel.cli_image:main"
+hongtai-test-pattern = "hongtai_panel.cli_test_pattern:main"
+hongtai-service = "hongtai_panel.cli_service:main"
+hongtai-install-service = "hongtai_panel.cli_install_service:main"
+hongtai-editor = "hongtai_panel.cli_editor:main"
+hongtai-diagnose-stream = "hongtai_panel.cli_diagnostic:main"
+hongtai-direct = "hongtai_panel.cli_direct:main"
+hongtai-control = "hongtai_panel.cli_control:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+hongtai_panel = ["layouts/*.json", "editor_assets/*"]
