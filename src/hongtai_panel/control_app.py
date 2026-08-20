@@ -19,12 +19,19 @@ from .direct import stream_demo
 from .discovery import resolve_panel_path
 from .layout import LiveLayout, default_layout_path
 from .layout_renderer import render_layout
+from .media import (
+    ensure_private_media_dir,
+    list_private_media,
+    load_private_media,
+    prepare_still_image,
+)
 from .metrics import SystemMetricsCollector
 from .rendering import encode_jpeg, render_test_pattern
 
 LAYOUTS = {
     "orientation": "Orientation test",
     "dashboard": "Starter dashboard",
+    "image": "Selected image",
 }
 
 
@@ -36,6 +43,7 @@ class PanelController:
         *,
         device_path: str | None = None,
         layout_path: str | Path | None = None,
+        media_dir: str | Path | None = None,
         frame_interval: float = 5.0,
         refresh_interval: float = 1.0,
         panel_factory: Callable[[str], HongtaiPanel] = HongtaiPanel,
@@ -44,6 +52,7 @@ class PanelController:
     ) -> None:
         self.device_path = device_path
         self.layout_path = Path(layout_path or default_layout_path())
+        self.media_dir = ensure_private_media_dir(media_dir)
         self.frame_interval = frame_interval
         self.refresh_interval = refresh_interval
         self.panel_factory = panel_factory
@@ -61,6 +70,9 @@ class PanelController:
         self._info: DeviceInfo | None = None
         self._brightness: int | None = None
         self._layout = "orientation"
+        self._selected_image: bytes | None = None
+        self._selected_image_name: str | None = None
+        self._selected_image_source: str | None = None
         self._error: str | None = None
 
     def snapshot(self) -> dict[str, Any]:
@@ -77,6 +89,13 @@ class PanelController:
                 "layout": self._layout,
                 "layout_name": LAYOUTS[self._layout],
                 "layouts": LAYOUTS,
+                "selected_image": self._selected_image_name,
+                "selected_image_source": self._selected_image_source,
+                "can_display_image": (
+                    self._selected_image is not None
+                    and self._path is not None
+                    and self._state not in {"starting", "streaming", "restarting"}
+                ),
                 "error": self._error,
                 "can_restore_default": (
                     self._state == "stopped"
@@ -111,6 +130,8 @@ class PanelController:
     ) -> dict[str, Any]:
         if layout not in LAYOUTS:
             raise ValueError(f"unknown built-in layout: {layout}")
+        if layout == "image" and self._selected_image is None:
+            raise RuntimeError("choose a PNG or JPEG image before displaying it")
         if brightness is not None:
             validate_brightness(brightness)
         with self._operation_lock:
@@ -230,6 +251,31 @@ class PanelController:
             )
         return self._make_frame(layout, info)
 
+    def media_library(self) -> dict[str, Any]:
+        """Return a privacy-safe view of the local media library."""
+        return {
+            "directory": "display_media/local",
+            "files": list_private_media(self.media_dir),
+            "selected_image": self._selected_image_name,
+            "selected_image_source": self._selected_image_source,
+        }
+
+    def select_library_image(self, name: str) -> dict[str, Any]:
+        """Select one file from the private media folder without streaming."""
+        with self._operation_lock:
+            self._ensure_media_selection_allowed()
+            safe_name, jpeg = load_private_media(self.media_dir, name)
+            self._set_selected_image(safe_name, jpeg, "private library")
+            return self.snapshot()
+
+    def select_uploaded_image(self, name: str, data: bytes) -> dict[str, Any]:
+        """Select browser-provided image bytes in memory without storing them."""
+        with self._operation_lock:
+            self._ensure_media_selection_allowed()
+            jpeg = prepare_still_image(data, name)
+            self._set_selected_image(Path(name).name, jpeg, "chosen file")
+            return self.snapshot()
+
     def close(self) -> None:
         self.stop()
 
@@ -275,6 +321,11 @@ class PanelController:
     def _make_frame(self, layout: str, info: DeviceInfo) -> bytes:
         if self._external_frame_factory is not None:
             return self._external_frame_factory(layout, info)
+        if layout == "image":
+            with self._lock:
+                if self._selected_image is None:
+                    raise RuntimeError("choose a PNG or JPEG image before displaying it")
+                return self._selected_image
         if layout == "orientation":
             image = render_test_pattern(
                 480,
@@ -285,6 +336,20 @@ class PanelController:
         else:
             image = render_layout(self._live_layout.get(), self._metrics.collect())
         return encode_jpeg(image, quality=80)
+
+    def _ensure_media_selection_allowed(self) -> None:
+        if self._worker is not None and self._worker.is_alive():
+            raise RuntimeError("stop the live display before choosing another image")
+        if self._state == "restarting":
+            raise RuntimeError("wait for the panel restart before choosing an image")
+
+    def _set_selected_image(self, name: str, jpeg: bytes, source: str) -> None:
+        with self._lock:
+            self._selected_image_name = name
+            self._selected_image = jpeg
+            self._selected_image_source = source
+            self._layout = "image"
+            self._error = None
 
     def _record_error(self, exc: Exception) -> None:
         with self._lock:

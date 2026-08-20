@@ -7,6 +7,22 @@ from io import BytesIO
 from .protocol import MAX_JPEG_BYTES, ProtocolError
 
 
+def fit_panel_image(image, width: int = 480, height: int = 320):
+    """Crop and resize a Pillow image to fill the panel without distortion."""
+    if width <= 0 or height <= 0:
+        raise ValueError("panel width and height must be positive")
+    try:
+        from PIL import Image, ImageOps
+    except ImportError as exc:
+        raise RuntimeError("image fitting requires Pillow") from exc
+    return ImageOps.fit(
+        image.convert("RGB"),
+        (width, height),
+        method=Image.Resampling.LANCZOS,
+        centering=(0.5, 0.5),
+    )
+
+
 def encode_jpeg(image, quality: int = 85, min_quality: int = 30) -> bytes:
     """Encode a Pillow image within the verified panel's JPEG size budget."""
     if not 1 <= min_quality <= quality <= 95:

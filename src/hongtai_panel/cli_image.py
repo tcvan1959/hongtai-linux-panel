@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import argparse
 from .device import HongtaiPanel
-from .rendering import encode_jpeg
+from .rendering import encode_jpeg, fit_panel_image
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -30,14 +30,14 @@ def build_parser() -> argparse.ArgumentParser:
 
 def prepare_jpeg(path: str, width: int, height: int, quality: int) -> bytes:
     try:
-        from PIL import Image, ImageOps
+        from PIL import Image
     except ImportError as exc:
         raise SystemExit(
             "Image support requires Pillow. Install with: pip install -e '.[images]'"
         ) from exc
 
     with Image.open(path) as source:
-        image = ImageOps.fit(source.convert("RGB"), (width, height))
+        image = fit_panel_image(source, width, height)
         return encode_jpeg(image, quality=quality)
 
 

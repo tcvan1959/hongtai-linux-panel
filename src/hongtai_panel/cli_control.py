@@ -21,6 +21,12 @@ def build_parser() -> argparse.ArgumentParser:
         default=default_layout_path(),
         help="starter dashboard layout JSON",
     )
+    parser.add_argument(
+        "--media-dir",
+        type=Path,
+        default=None,
+        help="private PNG/JPEG library; defaults to display_media/local in a checkout",
+    )
     parser.add_argument("--host", default="127.0.0.1", help="localhost address")
     parser.add_argument("--port", default=8765, type=int, help="local TCP port")
     parser.add_argument("--no-open", action="store_true", help="do not open a browser")
@@ -29,7 +35,11 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    controller = PanelController(device_path=args.device, layout_path=args.layout)
+    controller = PanelController(
+        device_path=args.device,
+        layout_path=args.layout,
+        media_dir=args.media_dir,
+    )
     try:
         server = create_editor_server(
             args.layout,

@@ -1,6 +1,11 @@
 import threading
 import time
+import tempfile
 import unittest
+from io import BytesIO
+from pathlib import Path
+
+from PIL import Image
 
 from hongtai_panel.control_app import PanelController
 from hongtai_panel.device import DeviceInfo
@@ -69,7 +74,14 @@ def wait_for(predicate, timeout=1.0):
 
 
 class PanelControllerTests(unittest.TestCase):
-    def make_controller(self, info=None, restart_error=None):
+    def make_controller(
+        self,
+        info=None,
+        restart_error=None,
+        *,
+        media_dir=None,
+        use_real_frames=False,
+    ):
         instances = []
         selected_info = info or supported_info()
 
@@ -79,11 +91,22 @@ class PanelControllerTests(unittest.TestCase):
         controller = PanelController(
             panel_factory=factory,
             path_resolver=lambda _explicit: "/dev/test-panel",
-            frame_factory=lambda layout, _info: f"jpeg-{layout}".encode(),
+            frame_factory=(
+                None
+                if use_real_frames
+                else lambda layout, _info: f"jpeg-{layout}".encode()
+            ),
+            media_dir=media_dir,
             frame_interval=0.02,
             refresh_interval=0.005,
         )
         return controller, instances
+
+    @staticmethod
+    def png_bytes(size=(80, 80), color="#0ea5e9"):
+        output = BytesIO()
+        Image.new("RGB", size, color).save(output, "PNG")
+        return output.getvalue()
 
     def test_detect_reports_verified_identity_and_closes_probe(self):
         controller, instances = self.make_controller()
@@ -206,6 +229,54 @@ class PanelControllerTests(unittest.TestCase):
             controller.detect()
         self.assertEqual(controller.snapshot()["state"], "error")
         self.assertTrue(instances[0].closed)
+
+    def test_image_selection_previews_without_starting_stream(self):
+        with tempfile.TemporaryDirectory() as directory:
+            controller, instances = self.make_controller(
+                media_dir=directory,
+                use_real_frames=True,
+            )
+            state = controller.select_uploaded_image("private.png", self.png_bytes())
+            self.assertEqual(state["selected_image"], "private.png")
+            self.assertEqual(state["selected_image_source"], "chosen file")
+            self.assertEqual(state["state"], "disconnected")
+            self.assertEqual(instances, [])
+            with Image.open(BytesIO(controller.preview("image"))) as preview:
+                self.assertEqual(preview.size, (480, 320))
+
+    def test_private_library_selection_and_display_use_existing_worker(self):
+        with tempfile.TemporaryDirectory() as directory:
+            media = Path(directory)
+            (media / "library.jpg").write_bytes(self.png_bytes())
+            controller, instances = self.make_controller(
+                media_dir=media,
+                use_real_frames=True,
+            )
+            library = controller.media_library()
+            self.assertEqual(library["files"], ["library.jpg"])
+            selected = controller.select_library_image("library.jpg")
+            self.assertEqual(selected["layout"], "image")
+            self.assertFalse(selected["can_display_image"])
+            controller.detect()
+            self.assertTrue(controller.snapshot()["can_display_image"])
+            expected = controller.preview("image")
+            controller.start("image", 80)
+            wait_for(lambda: controller.snapshot()["state"] == "streaming")
+            stream_panel = instances[-1]
+            wait_for(lambda: stream_panel.sent)
+            self.assertEqual(stream_panel.sent[0][0], expected)
+            with self.assertRaisesRegex(RuntimeError, "stop the live display"):
+                controller.select_uploaded_image("other.png", self.png_bytes())
+            stopped = controller.stop()
+            self.assertEqual(stopped["state"], "stopped")
+            self.assertEqual(stopped["selected_image"], "library.jpg")
+
+    def test_image_display_requires_a_selection(self):
+        with tempfile.TemporaryDirectory() as directory:
+            controller, instances = self.make_controller(media_dir=directory)
+            with self.assertRaisesRegex(RuntimeError, "choose a PNG or JPEG"):
+                controller.start("image")
+            self.assertEqual(instances, [])
 
 
 if __name__ == "__main__":

@@ -4,6 +4,7 @@ let token = "";
 let panel = null;
 let polling = null;
 let brightnessDirty = false;
+let mediaFiles = [];
 
 const $ = selector => document.querySelector(selector);
 
@@ -45,12 +46,23 @@ function render() {
   const active = ["starting", "streaming"].includes(panel.state);
   const restarting = panel.state === "restarting";
   const known = Boolean(panel.path);
+  const imageSelected = Boolean(panel.selected_image);
+  const imageMode = $("#layout-choice").value === "image";
   $("#detect-panel").disabled = active;
-  $("#start-display").disabled = active || restarting || !known;
+  $("#start-display").disabled = active || restarting || !known || (imageMode && !imageSelected);
+  $("#start-display").textContent = imageMode ? "Display image" : "Start display";
   $("#stop-display").disabled = !active;
   $("#apply-brightness").disabled = !known || panel.state === "starting" || restarting;
   $("#restore-default").disabled = panel.can_restore_default !== true;
   $("#layout-choice").disabled = active || restarting;
+  $("#layout-choice").querySelector('option[value="image"]').disabled = !imageSelected;
+  $("#refresh-media").disabled = active || restarting;
+  $("#browse-image").disabled = active || restarting;
+  $("#library-image").disabled = active || restarting || mediaFiles.length === 0;
+  $("#select-library-image").disabled = active || restarting || !$("#library-image").value;
+  $("#selected-image").textContent = imageSelected
+    ? `${panel.selected_image} (${panel.selected_image_source})`
+    : "None selected";
   const errorBox = $("#error-box");
   errorBox.hidden = !panel.error;
   errorBox.textContent = panel.error || "";
@@ -83,8 +95,35 @@ async function refreshStatus() {
   }
 }
 
+async function refreshMedia() {
+  const response = await fetch("/api/media");
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.error || "Could not read private media folder");
+  if (result.token) token = result.token;
+  mediaFiles = result.media.files || [];
+  const select = $("#library-image");
+  const prior = select.value;
+  select.replaceChildren();
+  if (mediaFiles.length === 0) {
+    const option = document.createElement("option");
+    option.value = "";
+    option.textContent = "No local images found";
+    select.append(option);
+  } else {
+    for (const name of mediaFiles) {
+      const option = document.createElement("option");
+      option.value = name;
+      option.textContent = name;
+      select.append(option);
+    }
+    if (mediaFiles.includes(prior)) select.value = prior;
+  }
+  render();
+}
+
 function updatePreview() {
   const layout = $("#layout-choice").value;
+  if (layout === "image" && !panel?.selected_image) return;
   $("#panel-preview").src = `/api/panel/preview?layout=${encodeURIComponent(layout)}&t=${Date.now()}`;
 }
 
@@ -93,7 +132,57 @@ $("#brightness").addEventListener("input", event => {
   $("#brightness-value").textContent = `${event.target.value}%`;
 });
 
-$("#layout-choice").addEventListener("change", updatePreview);
+$("#layout-choice").addEventListener("change", () => {
+  render();
+  updatePreview();
+});
+
+$("#library-image").addEventListener("change", render);
+
+$("#refresh-media").addEventListener("click", async () => {
+  try {
+    await refreshMedia();
+    showToast("Private media folder refreshed");
+  } catch (error) { showToast(error.message, true); }
+});
+
+$("#select-library-image").addEventListener("click", async () => {
+  try {
+    const name = $("#library-image").value;
+    if (!name) throw new Error("Choose an image from the private folder");
+    await request("/api/media/select", {name});
+    $("#layout-choice").value = "image";
+    render();
+    updatePreview();
+    showToast("Private image selected; choose Display image when ready");
+  } catch (error) { showToast(error.message, true); }
+});
+
+$("#browse-image").addEventListener("click", () => $("#image-file").click());
+
+$("#image-file").addEventListener("change", async event => {
+  const file = event.target.files[0];
+  if (!file) return;
+  try {
+    const response = await fetch("/api/media/upload", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/octet-stream",
+        "X-Control-Token": token,
+        "X-Media-Name": encodeURIComponent(file.name),
+      },
+      body: file,
+    });
+    const result = await response.json();
+    if (result.panel) panel = result.panel;
+    if (!response.ok) throw new Error(result.error || "Could not select image");
+    $("#layout-choice").value = "image";
+    render();
+    updatePreview();
+    showToast("Image selected in memory; choose Display image when ready");
+  } catch (error) { showToast(error.message, true); }
+  finally { event.target.value = ""; }
+});
 
 $("#detect-panel").addEventListener("click", async () => {
   try {
@@ -157,5 +246,5 @@ $("#exit-app").addEventListener("click", async () => {
 });
 
 updatePreview();
-refreshStatus();
+refreshStatus().then(refreshMedia).catch(error => showToast(error.message, true));
 polling = setInterval(refreshStatus, 750);

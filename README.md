@@ -84,12 +84,21 @@ PYTHONPATH=src python3 -m hongtai_panel.cli_control
 
 The app detects and identifies the verified panel, previews the built-in
 orientation test and starter dashboard, starts and stops display streaming,
-applies validated brightness changes, and offers an explicit **Restore default
-display (restarts panel)** action after streaming is fully stopped. That action
-sends one verified board-restart command and leaves re-detection to the user;
-it does not reconnect or retry automatically. Use **Exit app** or `Ctrl+C` in
-the launcher terminal to stop streaming and close the serial connection.
-Nothing is installed as a background service. See
+applies validated brightness changes, and can preview and explicitly display a
+selected PNG or JPEG still image. In a source checkout, personal images may be
+kept outside the repository and selected directly with **Browse / Choose
+image**, without copying them into the project. The optional
+`display_media/local/` folder remains available for generic checkout-local
+media; its contents are ignored by Git and excluded from package artifacts.
+Selection and preview never start the panel stream; **Display image** remains a
+separate action.
+
+Panel Control also offers an explicit **Restore default display (restarts
+panel)** action after streaming is fully stopped. That action sends one verified
+board-restart command and leaves re-detection to the user; it does not reconnect
+or retry automatically. Use **Exit app** or `Ctrl+C` in the launcher terminal
+to stop streaming and close the serial connection. Nothing is installed as a
+background service. See
 [docs/PANEL-CONTROL-V1.md](docs/PANEL-CONTROL-V1.md) for the runbook, physical
 acceptance steps, persistence boundary, and current limitations.
 
@@ -97,7 +106,9 @@ Panel Control App v1 completed physical acceptance on the test host on August
 20, 2026. Live display, Stop/blank behavior, the confirmed one-shot restore
 action, USB re-enumeration, factory-animation restoration, and subsequent
 manual device detection all behaved as designed on the verified firmware 3.2
-panel.
+panel. Display Media Library v1 also completed bounded physical acceptance on
+August 20, 2026: external-file selection and preview did not start streaming,
+and the explicitly displayed PNG rendered correctly and remained stable.
 
 ### Confirmed firmware/USB stall
 
