@@ -31,7 +31,14 @@ PATH` only when an explicit serial path is needed.
   queries device information, and requires the verified 480×320 geometry.
 - Identity fields show device path, model, firmware, and resolution.
 - The layout selector previews either the orientation test or the existing
-  starter sensor dashboard.
+  starter sensor dashboard, plus a selected still image when available.
+- **Refresh folder** lists direct-child PNG/JPEG files from the private media
+  folder. **Choose library image** prepares the chosen file but does not start
+  streaming.
+- **Browse / Choose image** accepts a PNG or JPEG elsewhere on the computer,
+  prepares it in memory, and does not copy or publish it.
+- The current filename and source are visible. **Display image** is enabled
+  only after selection and remains the explicit streaming action.
 - **Start display** begins modest-rate JPEG streaming and keepalives through
   the accepted direct-driver path.
 - The brightness slider accepts `0..100`; **Apply brightness** sends the
@@ -41,6 +48,34 @@ PATH` only when an explicit serial path is needed.
   the launch terminal performs the same foreground cleanup.
 - Visible state distinguishes disconnected, detected, starting, streaming,
   stopped, and error conditions. Failed actions show a user-facing message.
+
+## Display Media Library v1
+
+Personal images can remain outside the repository, including in a user's
+Pictures directory, and be selected directly with **Browse / Choose image**.
+They are decoded and prepared in memory for the current app session and are not
+copied into the project. The optional source-checkout library is
+`display_media/local/`; it is intended for generic checkout-local media. Its
+contents are ignored by Git, pruned from the source distribution, and outside
+the Python package tree. The tracked `.gitkeep` only preserves the empty
+folder. Installed copies that do not have a checkout use the user's private
+data directory (`$XDG_DATA_HOME/hongtai-linux-panel/media`, or the standard
+`~/.local/share` equivalent) instead.
+
+Only single-frame PNG and JPEG/JPG files are accepted. The implementation
+checks both filename and decoded image format, bounds input size and decoded
+pixel count, rejects missing, unreadable, corrupt, GIF, animated, and
+unsupported files, then center-crops while preserving aspect ratio and encodes
+one 480×320 JPEG through the existing rendering and streaming path. No file
+watching, slideshow, animation, video, remote download, or online search is
+present.
+
+Selection is app-session state. It is retained after **Stop display**, allowing
+the user to display it again or choose another image, but it is not written to
+configuration and does not start streaming by itself. Selecting another image
+is blocked while streaming; stop the display first. The separate restore action
+continues to be the only supported way to return a healthy panel from the
+expected blank-after-stop state to its factory animation.
 
 ## Persistence and stop behavior
 
@@ -88,8 +123,45 @@ action changes it.
 
 The normal suite uses fake panels for controller state, start/stop lifecycle,
 brightness validation, layout selection, missing paths, unsupported geometry,
-and error state. Loopback HTTP tests cover the control page, preview, status,
-and protected actions. These tests do not open physical serial hardware.
+error state, still-image validation, safe fit/crop, private-directory handling,
+selection-without-streaming, selected-image display, and selection preservation
+after Stop. Loopback HTTP tests cover the control page, media selection/upload,
+preview, status, and protected actions. Package inspection verifies that
+private media cannot enter the source distribution or wheel through the local
+folder. These tests do not open physical serial hardware.
+
+For the Display Media Library v1 physical acceptance, perform exactly one
+bounded foreground sequence on a healthy panel:
+
+1. Keep one non-sensitive test PNG/JPEG outside the repository and plan to use
+   **Browse / Choose image**. Launch Panel Control and choose **Detect panel**.
+2. Select the file. Confirm the current-image label and 480×320 preview are
+   correct, and confirm the panel has not started streaming.
+3. Choose **Display image** once. Confirm the selected image fills the screen,
+   retains its proportions through center cropping, and has the expected
+   orientation and colors.
+4. After a short stable observation, choose **Stop display** once. Confirm the
+   UI reports Stopped and the panel becomes blank as already expected.
+5. Choose **Restore default display (restarts panel)** once and accept the
+   warning. Confirm the board restarts, USB re-enumerates, and the factory
+   animation returns.
+6. Stop. Do not repeat automatically. If any communication error occurs, leave
+   the app stopped and follow the existing fail-stop boundary.
+
+### Display Media Library v1 physical acceptance record
+
+Display Media Library v1 completed bounded human verification on August 20,
+2026. Panel Control launched, detected the verified panel, selected an external
+private PNG through **Browse / Choose image**, and showed the correct preview
+without automatically starting the stream. The explicit **Display image**
+action rendered the image correctly at 480×320, and the physical display
+remained stable during the observation. The private test asset stayed outside
+the repository and is not named or reproduced in project content.
+
+The previously accepted Stop/blank, one-shot restore, USB re-enumeration, and
+manual post-restart detection behavior also completed normally during the
+bounded workflow. Animation, video, slideshow, file watching, and remote media
+remain outside this milestone.
 
 Use this bounded manual acceptance procedure on the test host:
 
@@ -172,5 +244,8 @@ behavior.
   followed by one bounded detection remains the qualified recovery procedure.
 - The starter dashboard reuses existing lightweight Linux metrics. Panel
   Control v1 does not add sensor sources or extend the layout editor.
+- Display Media Library v1 supports only one selected PNG/JPEG still at a time.
+  It provides no animation, video, slideshow, file watching, remote media, or
+  persistence of the selection between app sessions.
 - Packaging, autostart, remote access, Windows, device-family expansion, and
   publication remain outside this milestone.

@@ -28,3 +28,7 @@ dist/
 tmp/
 *.pid
 .DS_Store
+
+# Personal display media stays local. Keep only the empty-folder marker.
+display_media/local/*
+!display_media/local/.gitkeep

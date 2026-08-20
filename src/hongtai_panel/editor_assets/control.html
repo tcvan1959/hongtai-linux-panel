@@ -34,11 +34,12 @@
 
     <section class="control-card preview-card">
       <div class="control-heading">
-        <div><p class="eyebrow">DISPLAY</p><h2>Built-in layout</h2></div>
-        <label class="layout-select">Layout
+        <div><p class="eyebrow">DISPLAY</p><h2>Content preview</h2></div>
+        <label class="layout-select">Content
           <select id="layout-choice">
             <option value="orientation">Orientation test</option>
             <option value="dashboard">Starter dashboard</option>
+            <option value="image" disabled>Selected image</option>
           </select>
         </label>
       </div>
@@ -49,6 +50,25 @@
         <button id="start-display" class="primary" disabled>Start display</button>
         <button id="stop-display" disabled>Stop display</button>
       </div>
+    </section>
+
+    <section class="control-card media-card">
+      <div class="control-heading">
+        <div><p class="eyebrow">PRIVATE MEDIA</p><h2>Still-image library</h2></div>
+        <button id="refresh-media">Refresh folder</button>
+      </div>
+      <label>Image in <code>display_media/local</code>
+        <select id="library-image">
+          <option value="">No local images found</option>
+        </select>
+      </label>
+      <div class="media-actions">
+        <button id="select-library-image" disabled>Choose library image</button>
+        <button id="browse-image">Browse / Choose image</button>
+        <input id="image-file" type="file" accept=".png,.jpg,.jpeg,image/png,image/jpeg" hidden>
+      </div>
+      <p class="selected-media">Current image: <strong id="selected-image">None selected</strong></p>
+      <p class="hint">PNG and JPEG only. Selection prepares a private in-memory preview; it never starts the panel automatically.</p>
     </section>
 
     <section class="control-card settings-card">

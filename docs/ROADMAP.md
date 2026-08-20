@@ -46,6 +46,22 @@
 Later feature milestones below are parked during this freeze and are not the
 next authorized work.
 
+## Display Media Library v1
+
+- [x] Add separate public-sample and Git-ignored local/private media concepts
+- [x] Select direct-child PNG/JPEG files from `display_media/local/`
+- [x] Browse another local PNG/JPEG without copying it into the repository
+- [x] Preview a selection without automatically starting the panel stream
+- [x] Preserve aspect ratio with a safe 480×320 center fit and JPEG encoding
+- [x] Display through the existing foreground worker and retain Stop/restore
+  behavior
+- [x] Reject GIF, animation, video, corrupt, missing, unreadable, and unsafe
+  inputs without adding remote or automated media features
+- [x] Verify software behavior and package exclusion with automated tests and
+  source/wheel inspection
+- [x] Complete one bounded, visually observed physical acceptance sequence
+  using an external private PNG (August 20, 2026; asset not retained)
+
 ## Milestone 2 — experimental display-service research (outside accepted v1)
 
 - [x] Device discovery using `/dev/serial/by-id`

@@ -3,6 +3,8 @@ include README.md
 include pyproject.toml
 recursive-include config *.json
 recursive-include docs *.md
+include display_media/README.md
+prune display_media/local
 recursive-include tests *.py
 global-exclude __pycache__
 global-exclude *.py[cod]

@@ -12,9 +12,10 @@ from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
-from urllib.parse import parse_qs, urlsplit
+from urllib.parse import parse_qs, unquote, urlsplit
 
 from .layout import Layout
+from .media import MAX_MEDIA_BYTES
 
 
 class EditorStore:
@@ -135,6 +136,15 @@ def create_editor_server(
                     return
                 self._send(HTTPStatus.OK, body, "image/jpeg")
                 return
+            if path == "/api/media" and controller is not None:
+                try:
+                    self._json(
+                        HTTPStatus.OK,
+                        {"media": controller.media_library(), "token": token},
+                    )
+                except (OSError, RuntimeError, TypeError, ValueError) as exc:
+                    self._json(HTTPStatus.BAD_REQUEST, {"error": str(exc)})
+                return
             if path == "/api/layout":
                 try:
                     self._json(HTTPStatus.OK, {"layout": store.load_dict(), "token": token})
@@ -203,6 +213,28 @@ def create_editor_server(
             if not secrets.compare_digest(self.headers.get("X-Control-Token", ""), token):
                 self._json(HTTPStatus.FORBIDDEN, {"error": "invalid control token"})
                 return
+            if path == "/api/media/upload":
+                try:
+                    length = int(self.headers.get("Content-Length", "0"))
+                except ValueError:
+                    length = 0
+                if length <= 0 or length > MAX_MEDIA_BYTES:
+                    self._json(HTTPStatus.BAD_REQUEST, {"error": "invalid image size"})
+                    return
+                name = unquote(self.headers.get("X-Media-Name", ""))
+                try:
+                    panel = controller.select_uploaded_image(
+                        name,
+                        self.rfile.read(length),
+                    )
+                except (OSError, RuntimeError, TypeError, ValueError) as exc:
+                    self._json(
+                        HTTPStatus.BAD_REQUEST,
+                        {"error": str(exc), "panel": controller.snapshot()},
+                    )
+                    return
+                self._json(HTTPStatus.OK, {"panel": panel})
+                return
             try:
                 length = int(self.headers.get("Content-Length", "0"))
             except ValueError:
@@ -229,6 +261,8 @@ def create_editor_server(
                     if values.get("confirmed") is not True:
                         raise ValueError("panel restart confirmation is required")
                     panel = controller.restore_default_display()
+                elif path == "/api/media/select":
+                    panel = controller.select_library_image(values.get("name"))
                 elif path == "/api/app/exit":
                     panel = controller.stop()
                     self._json(HTTPStatus.OK, {"panel": panel, "exiting": True})

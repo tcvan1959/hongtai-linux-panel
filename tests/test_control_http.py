@@ -14,6 +14,10 @@ class FakeController:
         self.state = "disconnected"
         self.closed = False
         self.restore_calls = 0
+        self.selected_image = None
+        self.selected_image_source = None
+        self.media_select_calls = 0
+        self.media_upload_calls = 0
 
     def snapshot(self):
         return {
@@ -26,7 +30,13 @@ class FakeController:
             "brightness": 80,
             "layout": "orientation",
             "layout_name": "Orientation test",
-            "layouts": {"orientation": "Orientation test"},
+            "layouts": {
+                "orientation": "Orientation test",
+                "image": "Selected image",
+            },
+            "selected_image": self.selected_image,
+            "selected_image_source": self.selected_image_source,
+            "can_display_image": bool(self.selected_image),
             "error": None,
             "can_restore_default": self.state == "stopped",
         }
@@ -53,6 +63,27 @@ class FakeController:
 
     def preview(self, _layout):
         return b"jpeg-preview"
+
+    def media_library(self):
+        return {
+            "directory": "display_media/local",
+            "files": ["library.png"],
+            "selected_image": self.selected_image,
+            "selected_image_source": self.selected_image_source,
+        }
+
+    def select_library_image(self, name):
+        self.media_select_calls += 1
+        self.selected_image = name
+        self.selected_image_source = "private library"
+        return self.snapshot()
+
+    def select_uploaded_image(self, name, data):
+        self.media_upload_calls += 1
+        self.selected_image = name
+        self.selected_image_source = "chosen file"
+        self.uploaded_data = data
+        return self.snapshot()
 
     def close(self):
         self.closed = True
@@ -87,10 +118,12 @@ class ControlHttpTests(unittest.TestCase):
                 self.assertIn(
                     b"Restore default display (restarts panel)", control_html
                 )
+                self.assertIn(b"Browse / Choose image", control_html)
                 with urllib.request.urlopen(
                     server.url + "control.js", timeout=2
                 ) as response:
                     control_js = response.read()
+                self.assertIn(b"Display image", control_js)
                 self.assertIn(b"window.confirm", control_js)
                 self.assertIn(b"/api/panel/restore-default", control_js)
                 with urllib.request.urlopen(
@@ -98,6 +131,43 @@ class ControlHttpTests(unittest.TestCase):
                 ) as response:
                     status = json.load(response)
                 self.assertEqual(status["panel"]["state"], "disconnected")
+                with urllib.request.urlopen(
+                    server.url + "api/media", timeout=2
+                ) as response:
+                    media = json.load(response)
+                self.assertEqual(media["media"]["files"], ["library.png"])
+
+                select_media = urllib.request.Request(
+                    server.url + "api/media/select",
+                    data=b'{"name":"library.png"}',
+                    method="POST",
+                    headers={
+                        "Content-Type": "application/json",
+                        "X-Control-Token": status["token"],
+                    },
+                )
+                with urllib.request.urlopen(select_media, timeout=2) as response:
+                    selection = json.load(response)
+                self.assertEqual(selection["panel"]["state"], "disconnected")
+                self.assertEqual(selection["panel"]["selected_image"], "library.png")
+                self.assertEqual(controller.media_select_calls, 1)
+
+                upload_media = urllib.request.Request(
+                    server.url + "api/media/upload",
+                    data=b"synthetic image payload",
+                    method="POST",
+                    headers={
+                        "Content-Type": "application/octet-stream",
+                        "X-Control-Token": status["token"],
+                        "X-Media-Name": "chosen.jpg",
+                    },
+                )
+                with urllib.request.urlopen(upload_media, timeout=2) as response:
+                    uploaded = json.load(response)
+                self.assertEqual(uploaded["panel"]["state"], "disconnected")
+                self.assertEqual(uploaded["panel"]["selected_image"], "chosen.jpg")
+                self.assertEqual(controller.media_upload_calls, 1)
+                self.assertEqual(controller.uploaded_data, b"synthetic image payload")
                 with urllib.request.urlopen(
                     server.url + "api/panel/preview?layout=orientation", timeout=2
                 ) as response:
